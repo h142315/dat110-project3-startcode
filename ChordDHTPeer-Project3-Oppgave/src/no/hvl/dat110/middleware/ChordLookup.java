@@ -28,20 +28,33 @@ public class ChordLookup {
 	public NodeInterface findSuccessor(BigInteger key) throws RemoteException {
 		
 		// ask this node to find the successor of key
-		
 		// get the successor of the node
+		NodeInterface nodeSuccessor = node.getSuccessor();
 		
 		// get the stub for this successor (Util.getProcessStub())
+		NodeInterface nodeSuccessorStub = Util.getProcessStub(nodeSuccessor.getNodeName(), nodeSuccessor.getPort());
 		
-		// check that key is a member of the set {nodeid+1,...,succID} i.e. (nodeid+1 <= key <= succID) using the ComputeLogic
-		
-		// if logic returns true, then return the successor
-		
-		// if logic returns false; call findHighestPredecessor(key)
-		
-		// do return highest_pred.findSuccessor(key) - This is a recursive call until logic returns true
-				
-		return null;					
+		if (nodeSuccessorStub != null) {
+			// check that key is a member of the set {nodeid+1,...,succID} i.e. (nodeid+1 <= key <= succID) using the ComputeLogic
+			BigInteger nodeSuccessorStubId = nodeSuccessorStub.getNodeID();
+			
+			BigInteger nodeId = node.getNodeID().add(new BigInteger("1"));
+			Boolean logic = Util.computeLogic(key, nodeId, nodeSuccessorStubId);
+			
+			// if logic returns true, then return the successor
+			if(logic == true) {
+				return nodeSuccessorStub;
+			}
+			
+			// if logic returns false; call findHighestPredecessor(key)
+			NodeInterface highestPredecessor = findHighestPredecessor(key);
+			
+			// do return highest_pred.findSuccessor(key) - This is a recursive call until logic returns true
+			return highestPredecessor.findSuccessor(key);
+			
+		}
+			
+		return null;
 	}
 	
 	/**
@@ -53,15 +66,32 @@ public class ChordLookup {
 	private NodeInterface findHighestPredecessor(BigInteger key) throws RemoteException {
 		
 		// collect the entries in the finger table for this node
+		List<NodeInterface> fingerTable = node.getFingerTable();
+		int size = fingerTable.size() - 1;
 		
 		// starting from the last entry, iterate over the finger table
+		for (int i = 0; i < size - 1; i++) {
+			int m = size - i;
+			NodeInterface finger = fingerTable.get(m);
 		
-		// for each finger, obtain a stub from the registry
+			// for each finger, obtain a stub from the registry
+			NodeInterface fingerSuccessor = Util.getProcessStub(finger.getNodeName(), finger.getPort());
+			
+			// check that finger is a member of the set {nodeID+1,...,ID-1} i.e. (nodeID+1 <= finger <= key-1) using the ComputeLogic
+			BigInteger fingerID = finger.getNodeID();
+			
+			
+			BigInteger nodeID = node.getNodeID().add(new BigInteger("1"));
+			BigInteger keyID = key.subtract(new BigInteger("1"));
+			
+			Boolean logic = Util.computeLogic(fingerID, nodeID, keyID);
+			// if logic returns true, then return the finger (means finger is the closest to key)s
+			if (logic) {
+				return fingerSuccessor;
+			}
 		
-		// check that finger is a member of the set {nodeID+1,...,ID-1} i.e. (nodeID+1 <= finger <= key-1) using the ComputeLogic
-		
-		// if logic returns true, then return the finger (means finger is the closest to key)
-		
+		}
+				
 		return (NodeInterface) node;			
 	}
 	
